@@ -1,27 +1,12 @@
-use anyhow::{anyhow, Result};
-use serde::Deserialize;
+use crate::issues::{Issues, ListIssues};
+use reqwest::Result;
 
-use reqwest;
-
-#[derive(Deserialize)]
-struct Issue {
-    id: u16,
-}
-
-#[derive(Deserialize)]
-struct Issues {
-    issues: Vec<Issue>,
-    total_count: u16,
-    offset: u16,
-    limit: u16,
-}
-
-pub async fn create() -> Result<bool> {
-    let res = reqwest::get("https://redmine.plumelo.com/issues.json")
-        .await?
-        .json::<Issues>()
-        .await?;
-
-    println!("count: {}", res.total_count);
-    Ok(true)
+pub async fn create() -> Result<Issues> {
+    let list = ListIssues::new(
+        "https://redmine.plumelo.com".to_string(),
+        "fe59cf78192250be66078af4f71a10c925e1b3fa".to_string(),
+    )
+    .get()
+    .await?;
+    Ok(list)
 }

@@ -2,6 +2,7 @@ use clap::{Args, Parser, Subcommand};
 use create::create;
 
 mod create;
+mod issues;
 
 #[derive(Parser)]
 #[command(name = "todomine")]
