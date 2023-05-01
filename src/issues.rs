@@ -2,11 +2,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use todo_txt::Task;
 
-use reqwest::{
-    self,
-    header::{ACCEPT, CONTENT_TYPE},
-};
-
 #[derive(Deserialize, Debug)]
 struct Project {
     id: u16,
@@ -25,7 +20,6 @@ struct Issue {
     project: Project,
     status: Status,
     subject: String,
-    description: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -36,15 +30,17 @@ pub struct Issues {
     limit: u16,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Filter {
     offset: Option<u16>,
     limit: Option<u16>,
     sort: Option<String>,
-    issue_id: Vec<String>,
-    project_id: Option<String>,
-    status_id: String,
-    assigned_to_id: Option<String>,
+    #[serde(rename = "status_id")]
+    status: String,
+    #[serde(rename = "project_id")]
+    project: Option<String>,
+    #[serde(rename = "assigned_to_id")]
+    assigned_to: Option<String>,
 }
 impl Default for Filter {
     fn default() -> Self {
@@ -52,10 +48,9 @@ impl Default for Filter {
             offset: None,
             limit: None,
             sort: None,
-            issue_id: vec![],
-            project_id: None,
-            status_id: "*".to_string(),
-            assigned_to_id: None,
+            status: "*".to_string(),
+            project: None,
+            assigned_to: None,
         }
     }
 }
@@ -66,6 +61,7 @@ impl Issue {
         tags.insert("rid".to_string(), self.id.to_string());
         Task {
             subject: self.subject,
+            finished: self.status.name == "Closed",
             tags,
             projects: vec![self.project.name],
             ..Task::default()
@@ -73,8 +69,10 @@ impl Issue {
     }
 }
 impl Issues {
-    pub fn into_tasks(self) -> Vec<Task> {
+    pub fn into_tasks(mut self) -> Vec<Task> {
         let mut tasks: Vec<Task> = vec![];
+        self.issues.sort_by(|a, b| b.status.id.cmp(&a.status.id));
+
         for issue in self.issues {
             tasks.push(issue.into_task());
         }
@@ -98,11 +96,11 @@ impl ListIssues {
     }
 
     pub async fn get(self) -> reqwest::Result<Issues> {
-        let url = vec![self.url, "issues.json".to_string()].join("/");
+        let url = format!("{}/issues.json", self.url);
         let client = reqwest::Client::builder().build()?;
         let res = client
             .get(url)
-            //.query(&self.filter)
+            .query(&self.filter)
             .header("X-Redmine-API-Key", self.key)
             .send()
             .await?;
