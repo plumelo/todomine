@@ -1,21 +1,13 @@
+use crate::issues::Issue;
 use anyhow::Result;
 use std::str::FromStr;
 use todo_txt::Task;
-use tokio::fs::{File, OpenOptions};
+use tokio::fs::OpenOptions;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 pub struct Tasks {
     tasks: Vec<Task>,
     file: String,
-}
-
-async fn open(file: &String) -> Result<File> {
-    let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(file.as_str())
-        .await?;
-    Ok(file)
 }
 
 impl Tasks {
@@ -26,8 +18,12 @@ impl Tasks {
         }
     }
     pub async fn read(mut self) -> Result<Self> {
-        let file = open(&self.file).await?;
-
+        let file = OpenOptions::new()
+            .create(true)
+            .read(true)
+            .write(true)
+            .open(&self.file)
+            .await?;
         let mut lines = BufReader::new(file).lines();
         while let Some(line) = lines.next_line().await? {
             let task = Task::from_str(line.as_str())?;
@@ -37,16 +33,43 @@ impl Tasks {
     }
 
     pub async fn write(self) -> Result<Self> {
-        let mut file = open(&self.file).await?;
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(&self.file)
+            .await?;
         for task in &self.tasks {
+            print!("${task}");
             let line = format!("{task}\n");
             file.write(line.as_bytes()).await?;
         }
         Ok(self)
     }
 
-    pub fn sync(mut self,tasks: &mut Vec<Task>) -> Self {
-        self.tasks.append(tasks);
+    pub fn sync(mut self, issues: Vec<Issue>) -> Self {
+        let mut ids: Vec<u16> = vec![];
+        for task in &mut self.tasks {
+            let tags = task.tags.to_owned();
+            if !tags.contains_key("rid") {
+                continue;
+            }
+            for issue in &issues {
+                if let Some(rid) = tags.get("rid") {
+                    if issue.id.to_string() == rid.clone() {
+                        issue.sync_task(task);
+                        ids.push(issue.id.clone());
+                    }
+                }
+            }
+        }
+        self.tasks.append(
+            issues
+                .iter()
+                .filter(|i| !ids.contains(&i.id))
+                .map(|i| i.into_task())
+                .collect::<Vec<Task>>()
+                .as_mut(),
+        );
         self
     }
 }

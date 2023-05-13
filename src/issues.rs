@@ -15,19 +15,29 @@ struct Status {
 }
 
 #[derive(Deserialize, Debug)]
-struct Issue {
-    id: u16,
+pub struct Issue {
+    pub id: u16,
     project: Project,
     status: Status,
     subject: String,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct Issues {
-    issues: Vec<Issue>,
-    total_count: u16,
-    offset: u16,
-    limit: u16,
+impl Issue {
+    pub fn into_task(&self) -> Task {
+        let mut tags = BTreeMap::new();
+        tags.insert("rid".to_string(), self.id.to_string());
+        Task {
+            subject: self.subject.clone(),
+            finished: self.status.name == "Closed",
+            tags,
+            projects: vec![self.project.name.clone()],
+            ..Task::default()
+        }
+    }
+    pub fn sync_task(&self, task: &mut Task) {
+        task.subject = self.subject.clone();
+        task.finished = self.status.name == "Closed";
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -55,19 +65,14 @@ impl Default for Filter {
     }
 }
 
-impl Issue {
-    pub fn into_task(self) -> Task {
-        let mut tags = BTreeMap::new();
-        tags.insert("rid".to_string(), self.id.to_string());
-        Task {
-            subject: self.subject,
-            finished: self.status.name == "Closed",
-            tags,
-            projects: vec![self.project.name],
-            ..Task::default()
-        }
-    }
+#[derive(Deserialize, Debug)]
+pub struct Issues {
+    issues: Vec<Issue>,
+    total_count: u16,
+    offset: u16,
+    limit: u16,
 }
+
 impl Issues {
     pub fn into_tasks(mut self) -> Vec<Task> {
         let mut tasks: Vec<Task> = vec![];
@@ -95,7 +100,7 @@ impl ListIssues {
         }
     }
 
-    pub async fn get(self) -> reqwest::Result<Issues> {
+    pub async fn get(self) -> reqwest::Result<Vec<Issue>> {
         let url = format!("{}/issues.json", self.url);
         let client = reqwest::Client::builder().build()?;
         let res = client
@@ -104,7 +109,6 @@ impl ListIssues {
             .header("X-Redmine-API-Key", self.key)
             .send()
             .await?;
-        let issues = res.json::<Issues>().await?;
-        Ok(issues)
+        Ok(res.json::<Issues>().await?.issues)
     }
 }

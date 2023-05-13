@@ -20,10 +20,9 @@ pub struct Sync {
 
 impl Sync {
     pub async fn sync(self) -> Result<()> {
-        let tasks = Tasks::new(self.file);
-        let issue_list = ListIssues::new(self.url, self.key);
-        let task_list = &mut issue_list.get().await?.into_tasks();
-        tasks.sync(task_list).write().await?;
+        let tasks = Tasks::new(self.file).read().await?;
+        let issues = ListIssues::new(self.url, self.key).get().await?;
+        tasks.sync(issues).write().await?;
         Ok(())
     }
 }
