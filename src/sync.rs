@@ -1,8 +1,7 @@
 use crate::issues::ListIssues;
+use crate::tasks::Tasks;
 use anyhow::Result;
 use clap::Parser;
-use tokio::fs::OpenOptions;
-use tokio::io::AsyncWriteExt;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -21,18 +20,10 @@ pub struct Sync {
 
 impl Sync {
     pub async fn sync(self) -> Result<()> {
-        let list = ListIssues::new(self.url, self.key);
-        let tasks = list.get().await?.into_tasks();
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .open(self.file)
-            .await?;
-        for task in tasks {
-            let line = format!("{task}\n");
-            file.write(line.as_bytes()).await?;
-        }
-
+        let tasks = Tasks::new(self.file);
+        let issue_list = ListIssues::new(self.url, self.key);
+        let task_list = &mut issue_list.get().await?.into_tasks();
+        tasks.sync(task_list).write().await?;
         Ok(())
     }
 }
