@@ -25,18 +25,16 @@ pub struct Issue {
 impl Issue {
     pub fn into_task(&self) -> Task {
         let mut tags = BTreeMap::new();
+        let mut task = Task::default();
         tags.insert("rid".to_string(), self.id.to_string());
-        Task {
-            subject: self.subject.clone(),
-            finished: self.status.name == "Closed",
-            tags,
-            projects: vec![self.project.name.clone()],
-            ..Task::default()
-        }
+        task.tags = tags;
+        self.sync_task(&mut task);
+        task
     }
     pub fn sync_task(&self, task: &mut Task) {
         task.subject = self.subject.clone();
         task.finished = self.status.name == "Closed";
+        task.projects = vec![self.project.name.clone()];
     }
 }
 
