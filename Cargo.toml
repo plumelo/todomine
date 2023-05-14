@@ -8,5 +8,5 @@ anyhow = "1.0.70"
 clap = { version = "4.2.5", features = ["derive", "cargo", "env"] }
 reqwest = { version = "0.11.17", features = ["json"] }
 serde = { version = "1.0.160", features = ["derive"] }
-todo-txt = "3.0.1"
+todo-txt = { git = "https://github.com/plumelo/todo-txt.git", branch="feat/fmt" }
 tokio = { version = "1.28.0", features = ["full"] }
