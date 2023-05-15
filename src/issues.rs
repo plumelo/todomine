@@ -66,21 +66,9 @@ impl Default for Filter {
 #[derive(Deserialize, Debug)]
 pub struct Issues {
     issues: Vec<Issue>,
-    total_count: u16,
-    offset: u16,
-    limit: u16,
-}
-
-impl Issues {
-    pub fn into_tasks(mut self) -> Vec<Task> {
-        let mut tasks: Vec<Task> = vec![];
-        self.issues.sort_by(|a, b| b.status.id.cmp(&a.status.id));
-
-        for issue in self.issues {
-            tasks.push(issue.into_task());
-        }
-        tasks
-    }
+    //total_count: u16,
+    //offset: u16,
+    //limit: u16,
 }
 
 pub struct ListIssues {

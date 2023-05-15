@@ -62,14 +62,15 @@ impl Tasks {
                 }
             }
         }
-        self.tasks.append(
-            issues
-                .iter()
-                .filter(|i| !ids.contains(&i.id))
-                .map(|i| i.into_task())
-                .collect::<Vec<Task>>()
-                .as_mut(),
-        );
+        let mut new: Vec<Task> = issues
+            .iter()
+            .filter(|i| !ids.contains(&i.id))
+            .map(|i| i.into_task())
+            .collect::<Vec<Task>>();
+
+        new.sort_by(|a, b| a.finished.cmp(&b.finished));
+
+        self.tasks.append(&mut new);
         self
     }
 }
