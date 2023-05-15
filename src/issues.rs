@@ -15,19 +15,27 @@ struct Status {
 }
 
 #[derive(Deserialize, Debug)]
-struct Issue {
-    id: u16,
+pub struct Issue {
+    pub id: u16,
     project: Project,
     status: Status,
     subject: String,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct Issues {
-    issues: Vec<Issue>,
-    total_count: u16,
-    offset: u16,
-    limit: u16,
+impl Issue {
+    pub fn into_task(&self) -> Task {
+        let mut tags = BTreeMap::new();
+        let mut task = Task::default();
+        tags.insert("rid".to_string(), self.id.to_string());
+        task.tags = tags;
+        self.sync_task(&mut task);
+        task
+    }
+    pub fn sync_task(&self, task: &mut Task) {
+        task.subject = self.subject.clone();
+        task.finished = self.status.name == "Closed";
+        task.projects = vec![self.project.name.to_lowercase()];
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -55,56 +63,43 @@ impl Default for Filter {
     }
 }
 
-impl Issue {
-    pub fn into_task(self) -> Task {
-        let mut tags = BTreeMap::new();
-        tags.insert("rid".to_string(), self.id.to_string());
-        Task {
-            subject: self.subject,
-            finished: self.status.name == "Closed",
-            tags,
-            projects: vec![self.project.name],
-            ..Task::default()
-        }
-    }
-}
-impl Issues {
-    pub fn into_tasks(mut self) -> Vec<Task> {
-        let mut tasks: Vec<Task> = vec![];
-        self.issues.sort_by(|a, b| b.status.id.cmp(&a.status.id));
-
-        for issue in self.issues {
-            tasks.push(issue.into_task());
-        }
-        tasks
-    }
+#[derive(Deserialize, Debug)]
+pub struct IssuesResult {
+    issues: Vec<Issue>,
 }
 
-pub struct ListIssues {
+#[derive(Deserialize, Debug)]
+pub struct Issues {
     url: String,
     key: String,
-    filter: Filter,
+    #[serde(rename = "status_id")]
+    status: Option<String>,
+    #[serde(rename = "project_id")]
+    project: Option<String>,
+    #[serde(rename = "assigned_to_id")]
+    assigned_to: Option<String>,
 }
 
-impl ListIssues {
-    pub fn new(url: String, key: String) -> Self {
+impl Issues {
+    pub fn new(url: String, key: String, project: Option<String>) -> Self {
         Self {
             url,
             key,
-            filter: Filter::default(),
+            project,
+            status: None,
+            assigned_to: None,
         }
     }
 
-    pub async fn get(self) -> reqwest::Result<Issues> {
+    pub async fn get(self) -> reqwest::Result<Vec<Issue>> {
         let url = format!("{}/issues.json", self.url);
         let client = reqwest::Client::builder().build()?;
         let res = client
             .get(url)
-            .query(&self.filter)
+            .query(&[("project", &self.project)])
             .header("X-Redmine-API-Key", self.key)
             .send()
             .await?;
-        let issues = res.json::<Issues>().await?;
-        Ok(issues)
+        Ok(res.json::<IssuesResult>().await?.issues)
     }
 }

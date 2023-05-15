@@ -4,6 +4,7 @@ use sync::Sync;
 
 mod issues;
 mod sync;
+mod tasks;
 
 #[tokio::main]
 async fn main() -> Result<()> {
