@@ -39,7 +39,6 @@ impl Tasks {
             .open(&self.file)
             .await?;
         for task in &self.tasks {
-            print!("${task}");
             let line = format!("{task}\n");
             file.write(line.as_bytes()).await?;
         }
