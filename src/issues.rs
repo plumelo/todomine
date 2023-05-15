@@ -90,11 +90,14 @@ pub struct ListIssues {
 }
 
 impl ListIssues {
-    pub fn new(url: String, key: String) -> Self {
+    pub fn new(url: String, key: String, project: Option<String>) -> Self {
         Self {
             url,
             key,
-            filter: Filter::default(),
+            filter: Filter {
+                project,
+                ..Filter::default()
+            },
         }
     }
 

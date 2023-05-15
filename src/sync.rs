@@ -11,17 +11,22 @@ pub struct Sync {
     #[arg(short, long, env = "TODOMINE_FILE")]
     file: String,
     /// The Redmine base url
-    #[arg(short, long, env = "TODOMINE_REDMINE_API")]
+    #[arg(short, long, env = "TODOMINE_API")]
     url: String,
     /// The Redmine api key
-    #[arg(short, long, env = "TODOMINE_REDMINE_KEY")]
+    #[arg(short, long, env = "TODOMINE_KEY")]
     key: String,
+    /// The Redmine project
+    #[arg(short, long, env = "TODOMINE_PROJECT")]
+    project: Option<String>,
 }
 
 impl Sync {
     pub async fn sync(self) -> Result<()> {
         let tasks = Tasks::new(self.file).read().await?;
-        let issues = ListIssues::new(self.url, self.key).get().await?;
+        let issues = ListIssues::new(self.url, self.key, self.project)
+            .get()
+            .await?;
         tasks.sync(issues).write().await?;
         Ok(())
     }
