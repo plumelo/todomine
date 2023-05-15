@@ -1,4 +1,4 @@
-use crate::issues::ListIssues;
+use crate::issues::Issues;
 use crate::tasks::Tasks;
 use anyhow::Result;
 use clap::Parser;
@@ -24,9 +24,7 @@ pub struct Sync {
 impl Sync {
     pub async fn sync(self) -> Result<()> {
         let tasks = Tasks::new(self.file).read().await?;
-        let issues = ListIssues::new(self.url, self.key, self.project)
-            .get()
-            .await?;
+        let issues = Issues::new(self.url, self.key, self.project).get().await?;
         tasks.sync(issues).write().await?;
         Ok(())
     }

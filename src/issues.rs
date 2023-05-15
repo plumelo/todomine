@@ -64,28 +64,30 @@ impl Default for Filter {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct Issues {
+pub struct IssuesResult {
     issues: Vec<Issue>,
-    //total_count: u16,
-    //offset: u16,
-    //limit: u16,
 }
 
-pub struct ListIssues {
+#[derive(Deserialize, Debug)]
+pub struct Issues {
     url: String,
     key: String,
-    filter: Filter,
+    #[serde(rename = "status_id")]
+    status: Option<String>,
+    #[serde(rename = "project_id")]
+    project: Option<String>,
+    #[serde(rename = "assigned_to_id")]
+    assigned_to: Option<String>,
 }
 
-impl ListIssues {
+impl Issues {
     pub fn new(url: String, key: String, project: Option<String>) -> Self {
         Self {
             url,
             key,
-            filter: Filter {
-                project,
-                ..Filter::default()
-            },
+            project,
+            status: None,
+            assigned_to: None,
         }
     }
 
@@ -94,10 +96,10 @@ impl ListIssues {
         let client = reqwest::Client::builder().build()?;
         let res = client
             .get(url)
-            .query(&self.filter)
+            .query(&[("project", &self.project)])
             .header("X-Redmine-API-Key", self.key)
             .send()
             .await?;
-        Ok(res.json::<Issues>().await?.issues)
+        Ok(res.json::<IssuesResult>().await?.issues)
     }
 }
