@@ -1,0 +1,23 @@
+{
+  "name": "todomine",
+  "version": "0.0.1",
+  "description": "Synchronize Redmine issues with todo.txt files",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "semantic-release": "semantic-release"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.0",
+    "@semantic-release/commit-analyzer": "^9.0.0",
+    "@semantic-release/git": "^10.0.0",
+    "@semantic-release/github": "^8.0.0",
+    "@semantic-release/release-notes-generator": "^11.0.0",
+    "semantic-release": "^21.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/plumelo/todomine.git"
+  }
+}

@@ -32,9 +32,9 @@ impl Issue {
         task
     }
     pub fn sync_task(&self, task: &mut Task) {
-        task.subject = self.subject.clone();
+        task.subject =
+            self.subject.to_owned() + &" +".to_string() + &self.project.name.to_lowercase();
         task.finished = self.status.name == "Closed";
-        task.projects = vec![self.project.name.to_lowercase()];
     }
 }
 
