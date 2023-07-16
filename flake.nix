@@ -7,12 +7,12 @@
       overlays.default = final: prev: with final; {
         todomine = rustPlatform.buildRustPackage rec {
           name = "todomine";
-          src = self + "/api";
+          src = self;
           nativeBuildInputs = [
             pkg-config
           ];
           buildInputs = [ openssl ];
-          cargoHash = "sha256-LqOunAs6MhmhEACrcBs1kHrOWQ+a8Po/NKISmYhIzZ4=";
+          cargoHash = "sha256-/sUt7QLZT5iBzWZAFz0tUZiFjm6o5uAck8x+yP3sL28=";
         };
       };
       overlay = self.overlays.default;
@@ -40,7 +40,7 @@
       in
       with pkgs; rec {
         packages = rec {
-          inherit (pkgs) plumelo;
+          inherit (pkgs) todomine;
           devShell = mkShell {
             buildInputs = deps;
             shellHook = ''
