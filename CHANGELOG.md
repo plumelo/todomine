@@ -1,3 +1,13 @@
+## [1.1.0](https://github.com/plumelo/todomine/compare/v1.0.0...v1.1.0) (2023-07-16)
+
+
+### Features
+
+* add nix package ([2d269b8](https://github.com/plumelo/todomine/commit/2d269b813b365fd889a345bc87eb43c1d20c4eec))
+* cleanup api ([7682bbf](https://github.com/plumelo/todomine/commit/7682bbfe8e0f78bbd4a90793c8bbbe2cbf49a6a8))
+* **issues:** better support for project and status params ([4401e38](https://github.com/plumelo/todomine/commit/4401e38ee2ce7194601b9ce86c54a524b0f513a0))
+* **issues:** cleanup ([2e59162](https://github.com/plumelo/todomine/commit/2e591624a9084883fdbdf60f380c1af63f7a9ac4))
+
 ## 1.0.0 (2023-05-18)
 
 
