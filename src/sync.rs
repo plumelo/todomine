@@ -19,12 +19,18 @@ pub struct Sync {
     /// The Redmine project
     #[arg(short, long, env = "TODOMINE_PROJECT")]
     project: Option<String>,
+    #[arg(short, long, env = "TODOMINE_STATUS", default_value = "*")]
+    status: Option<String>,
+    #[arg(short, long, env = "TODOMINE_LIMIT", default_value_t = 1000)]
+    limit: u16,
 }
 
 impl Sync {
     pub async fn sync(self) -> Result<()> {
         let tasks = Tasks::new(self.file).read().await?;
-        let issues = Issues::new(self.url, self.key, self.project).get().await?;
+        let issues = Issues::new(self.url, self.key, self.project, self.status, self.limit)
+            .get()
+            .await?;
         tasks.sync(issues).write().await?;
         Ok(())
     }

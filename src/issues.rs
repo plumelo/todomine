@@ -1,17 +1,16 @@
+use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use todo_txt::Task;
 
 #[derive(Deserialize, Debug)]
 struct Project {
-    id: u16,
     name: String,
 }
 
 #[derive(Deserialize, Debug)]
 struct Status {
-    id: u16,
-    name: String,
+    is_closed: bool,
 }
 
 #[derive(Deserialize, Debug)]
@@ -34,7 +33,7 @@ impl Issue {
     pub fn sync_task(&self, task: &mut Task) {
         task.subject =
             self.subject.to_owned() + &" +".to_string() + &self.project.name.to_lowercase();
-        task.finished = self.status.name == "Closed";
+        task.finished = self.status.is_closed;
     }
 }
 
@@ -69,37 +68,88 @@ pub struct IssuesResult {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct ProjectResult {
+    id: u16,
+    identifier: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct ProjectsResult {
+    projects: Vec<ProjectResult>,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct Issues {
     url: String,
     key: String,
-    #[serde(rename = "status_id")]
     status: Option<String>,
-    #[serde(rename = "project_id")]
     project: Option<String>,
-    #[serde(rename = "assigned_to_id")]
-    assigned_to: Option<String>,
+    limit: u16,
 }
 
 impl Issues {
-    pub fn new(url: String, key: String, project: Option<String>) -> Self {
+    pub fn new(
+        url: String,
+        key: String,
+        project: Option<String>,
+        status: Option<String>,
+        limit: u16,
+    ) -> Self {
         Self {
             url,
             key,
             project,
-            status: None,
-            assigned_to: None,
+            status,
+            limit,
         }
     }
 
-    pub async fn get(self) -> reqwest::Result<Vec<Issue>> {
-        let url = format!("{}/issues.json", self.url);
-        let client = reqwest::Client::builder().build()?;
-        let res = client
-            .get(url)
-            .query(&[("project", &self.project)])
-            .header("X-Redmine-API-Key", self.key)
+    async fn project_id(&self, identifier: String) -> anyhow::Result<u16> {
+        reqwest::Client::builder()
+            .build()?
+            .get(format!("{}/projects.json", self.url.clone()))
+            .header("X-Redmine-API-Key", self.key.clone())
             .send()
-            .await?;
-        Ok(res.json::<IssuesResult>().await?.issues)
+            .await?
+            .json::<ProjectsResult>()
+            .await?
+            .projects
+            .into_iter()
+            .find(|p| p.identifier == identifier)
+            .map(|p| p.id)
+            .ok_or(anyhow!("Could not find project"))
+    }
+
+    async fn params(&self) -> anyhow::Result<Vec<(&str, String)>> {
+        Ok([
+            vec![("limit", self.limit.to_string())],
+            (match &self.project {
+                Some(identifier) => vec![(
+                    "project_id",
+                    self.project_id(identifier.clone()).await?.to_string(),
+                )],
+                None => vec![],
+            }),
+            (match &self.status {
+                Some(status) => vec![("status_id", status.clone())],
+                None => vec![],
+            }),
+        ]
+        .concat())
+    }
+
+    pub async fn get(&self) -> anyhow::Result<Vec<Issue>> {
+        let issues = reqwest::Client::builder()
+            .build()?
+            .get(format!("{}/issues.json", self.url))
+            .header("X-Redmine-API-Key", self.key.clone())
+            .query(&(self.params().await?))
+            .send()
+            .await?
+            .json::<IssuesResult>()
+            .await?
+            .issues;
+
+        Ok(issues)
     }
 }
