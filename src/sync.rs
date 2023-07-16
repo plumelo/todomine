@@ -27,11 +27,16 @@ pub struct Sync {
 
 impl Sync {
     pub async fn sync(self) -> Result<()> {
-        let tasks = Tasks::new(self.file).read().await?;
         let issues = Issues::new(self.url, self.key, self.project, self.status, self.limit)
             .get()
             .await?;
-        tasks.sync(issues).write().await?;
+
+        Tasks::from_file(self.file)
+            .await?
+            .sync(issues)
+            .write()
+            .await?;
+
         Ok(())
     }
 }

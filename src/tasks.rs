@@ -17,6 +17,10 @@ impl Tasks {
             tasks: vec![],
         }
     }
+    pub async fn from_file(file: String) -> Result<Self> {
+        Self::new(file).read().await
+    }
+
     pub async fn read(mut self) -> Result<Self> {
         let file = OpenOptions::new()
             .create(true)
