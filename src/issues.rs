@@ -1,5 +1,4 @@
-use anyhow::anyhow;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::collections::BTreeMap;
 use todo_txt::Task;
 
@@ -34,31 +33,6 @@ impl Issue {
         task.subject =
             self.subject.to_owned() + &" +".to_string() + &self.project.name.to_lowercase();
         task.finished = self.status.is_closed;
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct Filter {
-    offset: Option<u16>,
-    limit: Option<u16>,
-    sort: Option<String>,
-    #[serde(rename = "status_id")]
-    status: String,
-    #[serde(rename = "project_id")]
-    project: Option<String>,
-    #[serde(rename = "assigned_to_id")]
-    assigned_to: Option<String>,
-}
-impl Default for Filter {
-    fn default() -> Self {
-        Self {
-            offset: None,
-            limit: None,
-            sort: None,
-            status: "*".to_string(),
-            project: None,
-            assigned_to: None,
-        }
     }
 }
 
@@ -117,7 +91,10 @@ impl Issues {
             .into_iter()
             .find(|p| p.identifier == identifier)
             .map(|p| p.id)
-            .ok_or(anyhow!("Could not find project"))
+            .ok_or(anyhow::anyhow!(
+                "Could not find any project with identifier {:?}",
+                identifier
+            ))
     }
 
     async fn params(&self) -> anyhow::Result<Vec<(&str, String)>> {
